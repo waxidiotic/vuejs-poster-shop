@@ -1,24 +1,38 @@
+const PRICE = 9.99;
+
 new Vue({
   el: '#app',
   data: {
     total: 0,
-    items: [
-      { item: 1, title: 'Item 1', price: 9.99 },
-      { item: 2, title: 'Item 2', price: 9.99 },
-      { item: 3, title: 'Item 3', price: 9.99 }
-    ],
-    cart: []
+    items: [],
+    cart: [],
+    newSearch: 'baseball',
+    lastSearch: '',
+    loading: false,
+    price: PRICE
   },
   methods: {
+    onSubmit: function() {
+      this.items = [];
+      this.loading = true;
+      this.$http
+        .get('/search/'.concat(this.newSearch))
+        .then(function(res) {
+          this.lastSearch = this.newSearch;
+          this.search = '';
+          this.items = res.data;
+          this.loading = false;
+        })
+      ;
+    },
     addItem: function(index) {
-      this.total += 9.99;
       var item = this.items[index];
+      this.total += this.price;
       var found = false;
       for (let i = 0; i < this.cart.length; i++) {
         if (this.cart[i].id === item.id) {
           found = true;
           this.cart[i].qty++;
-          break;
         }
       }
       if (!found) {
@@ -26,17 +40,17 @@ new Vue({
           id: item.id,
           title: item.title,
           qty: 1,
-          price: item.price
+          price: this.price
         });
       }
     },
     inc: function(item) {
       item.qty++;
-      this.total += item.price;
+      this.total += this.price;
     },
     dec: function(item) {
       item.qty--;
-      this.total -= item.price;
+      this.total -= this.price;
       if (item.qty <= 0) {
         for (let i = 0; i < this.cart.length; i++) {
           if (this.cart[i].id === item.id) {
@@ -51,5 +65,8 @@ new Vue({
     currency: function(price) {
       return '$'.concat(price.toFixed(2));
     }
+  },
+  mounted: function() {
+    this.onSubmit(this.newSearch);
   }
 });
