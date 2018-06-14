@@ -1,4 +1,5 @@
 const PRICE = 9.99;
+const LOAD_NUM = 10;
 
 new Vue({
   el: '#app',
@@ -6,24 +7,39 @@ new Vue({
     total: 0,
     items: [],
     cart: [],
+    results: [],
     newSearch: 'baseball',
     lastSearch: '',
     loading: false,
     price: PRICE
   },
+  computed: {
+    noMoreItems: function() {
+      return this.results.length === this.items.length && this.results.length > 0;
+    }
+  },
   methods: {
+    appendItems: function() {
+      if (this.items.length < this.results.length) {
+        const append = this.results.slice(this.items.length, this.items.length + LOAD_NUM);
+        this.items = this.items.concat(append);
+      }
+    },
     onSubmit: function() {
-      this.items = [];
-      this.loading = true;
-      this.$http
-        .get('/search/'.concat(this.newSearch))
-        .then(function(res) {
-          this.lastSearch = this.newSearch;
-          this.search = '';
-          this.items = res.data;
-          this.loading = false;
-        })
-      ;
+      if (this.newSearch.length) {
+        this.items = [];
+        this.loading = true;
+        this.$http
+          .get('/search/'.concat(this.newSearch))
+          .then(function(res) {
+            this.lastSearch = this.newSearch;
+            this.search = '';
+            this.results = res.data;
+            this.appendItems();
+            this.loading = false;
+          })
+        ;
+      }
     },
     addItem: function(index) {
       var item = this.items[index];
@@ -68,5 +84,12 @@ new Vue({
   },
   mounted: function() {
     this.onSubmit(this.newSearch);
+
+    const vueInstance = this;
+    const elem = document.getElementById('product-list-bottom');
+    const watcher = scrollMonitor.create(elem);
+    watcher.enterViewport(function() {
+      vueInstance.appendItems();
+    });
   }
 });
